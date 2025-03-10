@@ -1,32 +1,35 @@
-## Installation instructions
-
-### docker nvidia support
+---
+title: Install instructions for aiwt.py 
+---
+## docker nvidia support
 
 on some installations it might be nessesary to start docker as `sudo docker ...`
 
-#### Arch Linux
+### Arch Linux
 
 1. be sure docker is o.k.:
 ```bash
-    docker run --rm hello-world
+docker run --rm hello-world
 ```
 
 otherwise consult [archlinux docs](https://wiki.archlinux.org/title/Docker)
 
 2. install NVIDIA container toolkit
-```bash
-    sudo pacman -S nvidia-container-toolkit
-    sudo nvidia-ctk runtime configure --runtime=docker
-    sudo systemctl restart docker
+```bash{.numberLines}
+sudo pacman -S nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
 ```
 
 3. check success with
 ```bash
-    docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
+docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
 ```
 
 should look like:
-```text
+
+
+```text{.tight-code .wide .extra-wide}
 +-----------------------------------------------------------------------------------------+
 | NVIDIA-SMI 570.124.04             Driver Version: 570.124.04     CUDA Version: 12.8     |
 |-----------------------------------------+------------------------+----------------------+
@@ -46,33 +49,52 @@ should look like:
 |=========================================================================================|
 +-----------------------------------------------------------------------------------------+
 ```
-#### other distros
+
+
+### other distros
 
 see [NVIDIA Installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 
-### install in subdir with virtual environment
+## install in subdir with virtual environment
 
-1. unpack/ clone git into <subdir>
-2. cd <subdir>
+1. unpack/ clone git into **SUBDIR**
+    - tar xzf aiwt.zip
+2. cd **SUBDIR**
+    - cd kwt
 3. make a virtual environment in .venv/ and activate
 ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 4. install requirements
 ```bash
-    python3 -m pip install --upgrade pip
-    python3 -m pip install -r requirements.txt
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+```
 5. run ollama docker image:
 ```bash
-    docker compose up -f docker/docker-compose.yml -d
+docker compose -f docker/docker-compose.yml up -d
 ```
-    to see logs from docker ai run without -d or start `docker logs -f ollama` in other terminal
+- to see logs from docker ai run `docker logs -f ollama` in other terminal
+- to check if docker container is running `docker ps`
+
 6. load ai model llava:v1.6
 ```bash
-    docker exec -it ollama ollama pull llava:v1.6
+docker exec -it ollama ollama pull llava:v1.6
 ```
-7. run aikw.py with verbosity 3 on local ai server with jpg files in subdir:
+
+## run programm 
+
+- with verbosity 3 against local ai server for .jpg (case insensitive) files in subdir:
 ```bash
-    python3 ./aikw.py -vvv -r "r'(?i)\.jpg$' <file or dirs>:
+python3 ./aikw.py -vvv -r '(?i)\.jpg$' <subdir>:
 ```
+- with verbosity 2 against remote ai server at 192.168.1.1:11434 for .ORF.xmp (case sensitive) files in subdir
+```bash
+python3 ./aikw.py -vv -O 192.168.1.1:11434 -r '\.ORF\.xmp$' <subdir>
+```
+- get help
+```bash
+python3 ./aikw.py --help
+```
+
