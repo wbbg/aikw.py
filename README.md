@@ -2,7 +2,7 @@
 
 Generate keywords, headline and title for files on your HDD without uploading anything to the Internet.
 
-Original idea and starting code from [c't magazine](ct.de/y9ey)
+Original idea and starting code from [c't magazine](https://ct.de/y9ey)
 
 ## Programming Language
 

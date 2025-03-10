@@ -60,7 +60,7 @@ see [NVIDIA Installation guide](https://docs.nvidia.com/datacenter/cloud-native/
 1. unpack/ clone git into **SUBDIR**
     - tar xzf aiwt.zip
 2. cd **SUBDIR**
-    - cd kwt
+    - cd aikw
 3. make a virtual environment in .venv/ and activate
 ```bash
 python3 -m venv .venv
