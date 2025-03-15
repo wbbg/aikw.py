@@ -25,17 +25,19 @@ llm_result = None
 
 def getArgs():
     global args
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="aikw.py", 
+                                     description="get descriptions and keywords for pictures from a locally running AI")
     parser.add_argument('filename', nargs='+')
     parser.add_argument('-O', '--ollama', dest='srv', action='append',
-                        default=[], metavar=('server:port'))
-    parser.add_argument('-f', '--force', action='store_true')
-    parser.add_argument('-o', '--overwrite', action='store_true')
+                        default=[], metavar=('server:port'), help='IPAddress and port for the AI [127.0.0.1:11434]')
+    parser.add_argument('-f', '--force', action='store_true', help='force retry on previously handled files [False]')
+    parser.add_argument('-o', '--overwrite', action='store_true', help='don\'n create *.*_backup files')
     parser.add_argument('-p', '--preserve', action='store_true')
-    parser.add_argument('-kw', '--keywords', type=int, default=15)
-    parser.add_argument('-L', '--logfile', default='log')
-    parser.add_argument('-r', '--fileregex', default=r'(?i).*\.orf\.xmp$')
-    parser.add_argument('-v', action='count', default=0)
+    parser.add_argument('-kw', '--keywords', type=int, default=15, help='number of keywords to generate [%(default)s]')
+    parser.add_argument('-L', '--logfile', default='log', help='logfile name [%(default)s]')
+    parser.add_argument('-r', '--fileregex', default=r'.*', help='filter file names by regex [%(default)s]')    # r'(?i).*\.orf\.xmp$'
+    parser.add_argument('-v', action='count', default=0, help='log level [%(default)s]')
+    parser.add_argument('-t', '--type', default="", help='filter file names by file type [%(default)s]')
     args = parser.parse_args()
 
 
