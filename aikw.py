@@ -12,6 +12,7 @@ from threading import Thread
 from io import BytesIO
 from time import time, sleep
 import logging
+import magic
 
 OLLAMA_MODEL = "llava:v1.6"
 KW_NUM = 15
@@ -29,15 +30,25 @@ def getArgs():
                                      description="get descriptions and keywords for pictures from a locally running AI")
     parser.add_argument('filename', nargs='+')
     parser.add_argument('-O', '--ollama', dest='srv', action='append',
-                        default=[], metavar=('server:port'), help='IPAddress and port for the AI [127.0.0.1:11434]')
-    parser.add_argument('-f', '--force', action='store_true', help='force retry on previously handled files [False]')
-    parser.add_argument('-o', '--overwrite', action='store_true', help='don\'t create *_backup files [%(default)s]')
+                        default=[], metavar=('server:port'),
+                        help='IPAddress and port for the AI [127.0.0.1:11434]')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='force retry on previously handled files [False]')
+    parser.add_argument('-o', '--overwrite', action='store_true',
+                        help='don\'t create *_backup files [%(default)s]')
     parser.add_argument('-p', '--preserve', action='store_true')
-    parser.add_argument('-kw', '--keywords', type=int, default=15, help='number of keywords to generate [%(default)s]')
-    parser.add_argument('-L', '--logfile', default='log', help='logfile name [%(default)s]')
-    parser.add_argument('-r', '--fileregex', default=r'.*', help='filter file names by regex [%(default)s]')    # r'(?i).*\.orf\.xmp$'
-    parser.add_argument('-v', action='count', default=0, help='log level [%(default)s]')
-    parser.add_argument('-t', '--type', default="", help='filter file names by file type [%(default)s]')
+    parser.add_argument('-kw', '--keywords', type=int, default=15,
+                        help='number of keywords to generate [%(default)s]')
+    parser.add_argument('-L', '--logfile', default='log',
+                        help='logfile name [%(default)s]')
+    parser.add_argument('-r', '--fileregex', default=r'.*', metavar='REGEX',
+                        help='filter file names by regex [%(default)s]')    # r'(?i).*\.orf\.xmp$'
+    parser.add_argument('-v', action='count', default=0,
+                        help='log level [%(default)s]')
+    parser.add_argument('-m', '--mimetype', default="",
+                        help='filter files by file (partial) mimetype [%(default)s]')
+    parser.add_argument('-n', '--dryrun', action='store_true',
+                        help='dryrun, don\'t ask the AI [%(default)s]')
     args = parser.parse_args()
 
 
@@ -149,24 +160,27 @@ def genMetaData(srv, filename):
         image = ImageOps.fit(image, (672, 672))
         image_b64 = convert2Base64(image)
 
-        llm_context = llm_inst.bind(images=[image_b64])
-        for key, prompt in prompts.items():
-            llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
-            llm_start = time()
-            llm_thread.start()
-            logger.info("Waiting for LLM to finish...")
-            while llm_thread.is_alive():
-                sleep(1)
-                if time() - llm_start > llm_timeout:
-                    logger.error("Timeout while waiting for LLM")
-                    break
-            if llm_thread.is_alive():
-                # writeMetaData(filename, "", "", [])
-                logger.error("LLM is not responding, killing thead...")
-                signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
-                # os.kill(0, signal.SIGKILL)
-            responses[key] = llm_result.strip()
-            logger.info(f"{key}: {responses[key]}")
+        if not args.dryrun:
+            llm_context = llm_inst.bind(images=[image_b64])
+            for key, prompt in prompts.items():
+                llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
+                llm_start = time()
+                llm_thread.start()
+                logger.info("Waiting for LLM to finish...")
+                while llm_thread.is_alive():
+                    sleep(1)
+                    if time() - llm_start > llm_timeout:
+                        logger.error("Timeout while waiting for LLM")
+                        break
+                if llm_thread.is_alive():
+                    # writeMetaData(filename, "", "", [])
+                    logger.error("LLM is not responding, killing thead...")
+                    signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
+                    # os.kill(0, signal.SIGKILL)
+                responses[key] = llm_result.strip()
+                logger.info(f"{key}: {responses[key]}")
+        else:
+            logger.info("dryrun: AI not consulted")
     return True
 
 
@@ -184,23 +198,41 @@ def writeMetaData(filename, headline, abstract, keywords):
     # Abstract: [ 'Exif.Photo.UserComment', 'Iptc.Application2.Caption', 'Xmp.dc.description' ]
     # Keywords: [ 'Iptc.Application2.Keywords', 'Xmp.dc.subject' ]
 
-    with ExifToolHelper() as et:
-        et.set_tags(filename,
-                    tags={"IPTC:Writer-Editor": OLLAMA_MODEL,
-                          "IPTC:Headline": headline,
-                          "EXIF:ImageDescription": headline,
-                          "XMP-dc:Title": headline,
-                          "IPTC:Caption-Abstract": abstract,
-                          "EXIF:UserComment": abstract,
-                          "XMP-dc:Description": abstract,
-                          "IPTC:Keywords": keywords,
-                          "XMP-dc:Subject": keywords
-                          }, params=ET_PARAMS
-                    )
+    if not args.dryrun:
+        with ExifToolHelper() as et:
+            et.set_tags(filename,
+                        tags={"IPTC:Writer-Editor": OLLAMA_MODEL,
+                              "IPTC:Headline": headline,
+                              "EXIF:ImageDescription": headline,
+                              "XMP-dc:Title": headline,
+                              "IPTC:Caption-Abstract": abstract,
+                              "EXIF:UserComment": abstract,
+                              "XMP-dc:Description": abstract,
+                              "IPTC:Keywords": keywords,
+                              "XMP-dc:Subject": keywords
+                              }, params=ET_PARAMS
+                        )
+    else:
+        logger.info("dryrun: no data written to file")
     return
 
 
+def filterMagic(fname):
+    """test if args.mimetype is contained in fname's mimetype
+
+    i.e.: fname' mimetype is image/jpeg, args.mimetype is image --> True
+    """
+    if args.mimetype:
+        ftype = magic.from_file(fname, mime=True)
+        mimetest = re.search(args.mimetype.upper(), ftype.upper())
+        logger.debug(f'{fname}: mime type {ftype}, test result: {mimetest}')
+        return bool(mimetest)
+    else:
+        return True
+
+
 def filterFile(fname):
+    """ test if fname matches args.regex"""
     global file_regex
     return file_regex.search(fname)
 
@@ -209,11 +241,16 @@ def workFiles(srv, flist):
     global logger
     for item in flist:
         logger.info("Processing %s", item)
-        if os.path.isfile(item) and filterFile(item):
+        if os.path.isfile(item) and filterFile(item) and filterMagic(item):
+
             s = getOllamaSrv(srv)
             if s is None:
-                logger.critical("No ollama server found.")
-                sys.exit(1)
+                if args.dryrun:
+                    logger.warning("No ollama server found.")
+                    continue
+                else:
+                    logger.critical("No ollama server found.")
+                    sys.exit(1)
             else:
                 logger.info(f"Using Ollama server {s}")
                 genMetaData(s, item)
