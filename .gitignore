@@ -1,5 +1,7 @@
 *.zip
+*.pdf
 log
 pics/
 .pandoc/
 .venv
+__pycache__

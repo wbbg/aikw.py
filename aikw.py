@@ -13,15 +13,24 @@ from io import BytesIO
 from time import time, sleep
 import logging
 import magic
+import datetime
+
+import dataWriter
 
 OLLAMA_MODEL = "llava:v1.6"
-KW_NUM = 15
+KW_NUM = 10
 FORCE_REGEN = False
 ET_PARAMS = []
 logger = logging.getLogger(__name__)
 llm_timeout = 1800.0
 llm_thread = None
 llm_result = None
+
+prompts = {
+    "headline": "Your role is a senior editor of a photo magazine. Describe the subject and the overall mood of the image in a headline with less than 12 words.",
+    "abstract": "Your role is a travel phptographer. Create a very precise summary about the image with less than 400 characters.",
+    "keywords": f"Your role is a photographer. Find a list of {KW_NUM} comma seperated single keywords describing the image and the overall mood of the image"
+}
 
 
 def getArgs():
@@ -82,7 +91,7 @@ def initApp():
     file_regex = re.compile(args.fileregex)
 
 
-def getOllamaSrv(servers):
+def getOllamaSrv(servers: [str]) -> str:
     for srv in servers:
         conn = http.client.HTTPConnection(srv, timeout=3)
         try:
@@ -112,6 +121,32 @@ def llmInvoke(ctx, prompt):
         logger.warning(f"Communication error with LLM: {e}")
 
 
+def fixOrientation(et, img: Image, fname) -> Image:
+    oTag = 'EXIF:Orientation'
+    res = et.execute_json('-' + oTag, "-n", fname)[0]
+    if oTag in res:
+        match res[oTag]:
+            case 2:
+                image = img.transpose(Image.FLIP_LEFT_RIGHT)
+            case 3:
+                image = img.transpose(Image.ROTATE_180)
+            case 4:
+                image = img.transpose(Image.FLIP_TOP_BOTTOM)
+            case 5:
+                image = img.transpose(Image.TRANSPOSE)
+            case 6:
+                image = img.transpose(Image.ROTATE_270)
+            case 7:
+                image = img.transpose(Image.TRANSVERSE)
+            case 8:
+                image = img.transpose(Image.ROTATE_90)
+            case _:
+                image = img
+    else:
+        image = img
+    return image
+
+
 def getImage(et, fname):
     basename, ext = os.path.splitext(fname)
     if ext.upper() == '.XMP':
@@ -124,27 +159,27 @@ def getImage(et, fname):
         image = Image.open(img_data)
     else:
         image = Image.open(fname)
-    return image
+    return fixOrientation(et, image, fname)
 
 
-def genMetaData(srv, filename):
+def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
     tagsToRead = ["IPTC:Writer-Editor"]
     global logger, KW_NUM, FORCE_REGEN, ET_PARAMS
     global llm_timeout, llm_thread, llm_context, llm_prompt, llm_result
     llm_inst = OllamaLLM(model=OLLAMA_MODEL, base_url="http://" + srv,
                          temperature=0)
-    prompts = {
-        "headline": "Your role is a editor of a photo magazine. Describe the subject and the overall mood of the image in a headline with less than 12 words.",
-        "abstract": "Your role is a phptographer. Create a very precise summary about the image with less than 300 characters.",
-        "keywords": f"Your role is a photographer. Find a list of {KW_NUM} comma seperated single keywords describing the image and the overall mood of the image"
+    data = {
+        'filename': filename,
+        'image_b64': "",
+        'model': OLLAMA_MODEL,
     }
-    responses = {}
+
     with ExifToolHelper() as et:
         try:
             image = getImage(et, filename)
         except Exception as e:
             logger.warning(f"Can't load {filename}: {str(e)}, skipping...")
-            return False
+            return None
 
         etags = et.get_tags(filename, tagsToRead)[0]
         if 'IPTC:Writer-Editor' in etags and etags['IPTC:Writer-Editor'] == "llava:v1.6":
@@ -152,17 +187,19 @@ def genMetaData(srv, filename):
                 logger.info(f"Processed {filename} before, regenerating...")
             else:
                 logger.warning(f"Processed {filename} before, skipping...")
-                return False
+                return None
 
         logger.debug(f"getting image from {filename} ...")
-        ImageOps.exif_transpose(image, in_place=True)
+        # ImageOps.exif_transpose(image, in_place=True)
         # image.thumbnail((672, 672))
         image = ImageOps.fit(image, (672, 672))
         image_b64 = convert2Base64(image)
-
+        data['image_b64'] = image_b64
         if not args.dryrun:
             llm_context = llm_inst.bind(images=[image_b64])
             for key, prompt in prompts.items():
+                response = {}
+
                 llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
                 llm_start = time()
                 llm_thread.start()
@@ -173,18 +210,21 @@ def genMetaData(srv, filename):
                         logger.error("Timeout while waiting for LLM")
                         break
                 if llm_thread.is_alive():
-                    # writeMetaData(filename, "", "", [])
                     logger.error("LLM is not responding, killing thead...")
                     signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
                     # os.kill(0, signal.SIGKILL)
-                responses[key] = llm_result.strip()
-                logger.info(f"{key}: {responses[key]}")
+                data[key] = {
+                    'result': llm_result.strip(),
+                    'prompt': prompt,
+                    'time': time() - llm_start
+                }
+                logger.debug(f"{key}: {data[key]['result']}")
         else:
             logger.info("dryrun: AI not consulted")
-    return True
+    return data
 
 
-def convert2Base64(image):
+def convert2Base64(image: Image) -> str:
     buffered = BytesIO()
     rgb_im = image.convert('RGB')
     rgb_im.save(buffered, format="JPEG")
@@ -217,10 +257,10 @@ def writeMetaData(filename, headline, abstract, keywords):
     return
 
 
-def filterMagic(fname):
+def filterMagic(fname: str) -> bool:
     """test if args.mimetype is contained in fname's mimetype
 
-    i.e.: fname' mimetype is image/jpeg, args.mimetype is image --> True
+    i.e.: fname's mimetype is image/jpeg, args.mimetype is image --> True
     """
     if args.mimetype:
         ftype = magic.from_file(fname, mime=True)
@@ -231,33 +271,37 @@ def filterMagic(fname):
         return True
 
 
-def filterFile(fname):
-    """ test if fname matches args.regex"""
+def filterRegex(fname: str) -> bool:
+    """ test if args.regex matches fname"""
     global file_regex
     return file_regex.search(fname)
 
 
 def workFiles(srv, flist):
     global logger
+    data = {}
     for item in flist:
         logger.info("Processing %s", item)
-        if os.path.isfile(item) and filterFile(item) and filterMagic(item):
+        if os.path.isfile(item) and filterRegex(item) and filterMagic(item):
 
-            s = getOllamaSrv(srv)
-            if s is None:
+            server = getOllamaSrv(srv)
+            if server is None:
                 if args.dryrun:
                     logger.warning("No ollama server found.")
-                    continue
+                    continue    # for item
                 else:
                     logger.critical("No ollama server found.")
                     sys.exit(1)
             else:
-                logger.info(f"Using Ollama server {s}")
-                genMetaData(s, item)
+                logger.info(f"Using Ollama server {server}")
+                data = genMetaData(server, item, prompts)
+                jsonFName = item + "." + datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '.ai.json'
+                logger.info(f'writing JSON to {jsonFName}')
+                dataWriter.JsonWriter(data, {'filename': jsonFName}).write()
         elif os.path.isdir(item):
             if os.path.isfile(item + "/.notag"):
                 logger.warning("Skipping %s as requested by .notag file", item)
-                continue
+                continue    # for item
             workFiles(srv, map(lambda i: os.path.join(os.path.abspath(item), i), os.listdir(item)))
         else:
             logger.info(f"Skipping {item}")
