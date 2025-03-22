@@ -1,4 +1,4 @@
-#! /bin/env zsh
+#! env zsh
 
 MODEL=llava:v1.6
 CONTAINER=ollama

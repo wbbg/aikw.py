@@ -12,8 +12,9 @@ from threading import Thread
 from io import BytesIO
 from time import time, sleep
 import logging
-import magic
+import pylibmagic
 import datetime
+import socket
 
 import dataWriter
 
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 llm_timeout = 1800.0
 llm_thread = None
 llm_result = None
+hostname = socket.gethostname()
 
 prompts = {
     "headline": "Your role is a senior editor of a photo magazine. Describe the subject and the overall mood of the image in a headline with less than 12 words.",
@@ -172,6 +174,8 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         'filename': filename,
         'image_b64': "",
         'model': OLLAMA_MODEL,
+        'host': hostname,
+        'when': datetime.datetime().now.strftime('%d.%m.%Y %H:%M:%S')
     }
 
     with ExifToolHelper() as et:
