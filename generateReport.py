@@ -60,7 +60,13 @@ def create_document():
                              ]),
             Spacer(0.5 * cm, 0.5 * cm),
             Paragraph(formatResult(data['keywords'])),
-            Paragraph("Model: {}".format(data['model']), styles['Italic']),
+            Paragraph("Model {} on {}, script on {}".format(
+                                        data['model'],
+                                        data['aihost'],
+                                        data['host']
+                                        ), 
+                      styles['Italic']),
+            Paragraph(data['when'], styles['Normal']),
             Paragraph("Prompts: ", styles['Heading5']),
         ])
         for k in ['headline', 'abstract', 'keywords']:

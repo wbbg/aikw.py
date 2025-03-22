@@ -12,7 +12,8 @@ from threading import Thread
 from io import BytesIO
 from time import time, sleep
 import logging
-import pylibmagic
+import pylibmagic 
+import magic
 import datetime
 import socket
 
@@ -164,6 +165,13 @@ def getImage(et, fname):
     return fixOrientation(et, image, fname)
 
 
+def getAiHost(srv: str)-> str:
+    try:
+        return socket.gethostbyaddr(srv.split(':')[0])[0]
+    except:
+        return srv
+
+
 def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
     tagsToRead = ["IPTC:Writer-Editor"]
     global logger, KW_NUM, FORCE_REGEN, ET_PARAMS
@@ -175,8 +183,9 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         'image_b64': "",
         'model': OLLAMA_MODEL,
         'host': hostname,
-        'when': datetime.datetime().now.strftime('%d.%m.%Y %H:%M:%S')
-    }
+        'when': datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
+        'aihost': getAiHost(srv),    
+        }
 
     with ExifToolHelper() as et:
         try:
