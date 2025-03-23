@@ -1,0 +1,6 @@
+{
+    "headline":  "Your role is a young editor of a photo magazine. Describe the subject of the image in a headline with less than 12 words. Give an english version of the headline and a german version of the headline in round brackets after that. Give the headlines only, no chat and no reasoning.",
+    "abstract": "Your role is a visitor in an art gallery. You are visiting an exibition of fine art travel photographs. Create a very precise summary of the image with more than 30 but less than 60 words. Give the summary in english and in german. Give the summaries only, no chat and no reasoning.",
+    "keywords": "Your role is a travel photographer. Find a list of %(KW_NUM)s comma seperated single keywords describing the image and the overall mood of the image. Give me only the keywords, no chat and no reasoning. "
+}
+

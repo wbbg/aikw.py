@@ -16,6 +16,7 @@ import pylibmagic
 import magic
 import datetime
 import socket
+import json
 
 import dataWriter
 
@@ -44,6 +45,8 @@ def getArgs():
     parser.add_argument('-O', '--ollama', dest='srv', action='append',
                         default=[], metavar=('server:port'),
                         help='IPAddress and port for the AI [127.0.0.1:11434]')
+    parser.add_argument('-M', '--model', default=OLLAMA_MODEL,
+                        help='ollama model [%(default)s')
     parser.add_argument('-f', '--force', action='store_true',
                         help='force retry on previously handled files [False]')
     parser.add_argument('-o', '--overwrite', action='store_true',
@@ -51,6 +54,8 @@ def getArgs():
     parser.add_argument('-p', '--preserve', action='store_true')
     parser.add_argument('-kw', '--keywords', type=int, default=15,
                         help='number of keywords to generate [%(default)s]')
+    parser.add_argument('-t', '--temperature', type=float, default=0,
+                        help='model temperature [%(default)s]')
     parser.add_argument('-L', '--logfile', default='log',
                         help='logfile name [%(default)s]')
     parser.add_argument('-r', '--fileregex', default=r'.*', metavar='REGEX',
@@ -61,11 +66,13 @@ def getArgs():
                         help='filter files by file (partial) mimetype [%(default)s]')
     parser.add_argument('-n', '--dryrun', action='store_true',
                         help='dryrun, don\'t ask the AI [%(default)s]')
+    parser.add_argument('-P', '--prompts', default = "", metavar='FILE',
+                        help='read prompts from JSON- file')
     args = parser.parse_args()
 
 
 def initApp():
-    global logger, KW_NUM, FORCE_REGEN, ET_PARAMS, file_regex
+    global logger, prompts, KW_NUM, FORCE_REGEN, ET_PARAMS, file_regex
     if len(args.logfile) > 0:
         logging.basicConfig(filename=args.logfile, level=logging.ERROR,
                             format='%(asctime)s %(levelname)s: %(message)s')
@@ -91,6 +98,15 @@ def initApp():
     if args.preserve:
         ET_PARAMS.append("-P")
         logger.info("Preserve modification time")
+    if args.prompts:
+        try:
+            with open(args.prompts) as pf:
+                prompts = json.load(pf)
+            for k in prompts:
+                prompts[k]=prompts[k] % {'KW_NUM': KW_NUM}
+        except Exception as e:
+            logger.critical('ERROR reading prompts: {}'.format(e))
+            sys.exit(2)
     file_regex = re.compile(args.fileregex)
 
 
@@ -176,12 +192,13 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
     tagsToRead = ["IPTC:Writer-Editor"]
     global logger, KW_NUM, FORCE_REGEN, ET_PARAMS
     global llm_timeout, llm_thread, llm_context, llm_prompt, llm_result
-    llm_inst = OllamaLLM(model=OLLAMA_MODEL, base_url="http://" + srv,
-                         temperature=0)
+    llm_inst = OllamaLLM(model=args.model, base_url="http://" + srv,
+                         temperature=args.temperature)
     data = {
         'filename': filename,
         'image_b64': "",
-        'model': OLLAMA_MODEL,
+        'model': args.model,
+        'temp': args.temperature,
         'host': hostname,
         'when': datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
         'aihost': getAiHost(srv),    
@@ -210,13 +227,13 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         data['image_b64'] = image_b64
         if not args.dryrun:
             llm_context = llm_inst.bind(images=[image_b64])
-            for key, prompt in prompts.items():
+            for key, prompt in sorted(prompts.items()):
                 response = {}
 
                 llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
                 llm_start = time()
                 llm_thread.start()
-                logger.info("Waiting for LLM to finish...")
+                logger.info(f"Waiting for LLM to finish {key}...")
                 while llm_thread.is_alive():
                     sleep(1)
                     if time() - llm_start > llm_timeout:

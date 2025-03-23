@@ -1,0 +1,6 @@
+{
+    "headline":  "Your role is a senior editor of a photo magazine. Describe the subject and the overall mood of the image in a headline with less than 12 words.",
+    "abstract": "Your role is a visitor in an art gallery. You are visiting an exibition of fine art travel photographs. Create a very precise summary about the image with less than 400 characters.",
+    "keywords": "Your role is a travel photographer. Find a list of %(KW_NUM)s comma seperated single keywords describing the image and the overall mood of the image"
+}
+

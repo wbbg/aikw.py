@@ -40,6 +40,13 @@ def formatResult(data: {}) -> str:
     return '{} [{:.1f}sec]'.format(data['result'], data['time'])
 
 
+def getDataStr(data: {}, key: str) -> str:
+    if key in data:
+        return data[key]
+    else:
+        return ""
+
+
 def create_document():
     global args
     doc = SimpleDocTemplate(
@@ -52,21 +59,22 @@ def create_document():
         data = getData(f)
         img = getImage(data)
         flowables.extend([
-            Paragraph(data['filename'],
+            Paragraph(getDataStr(data, 'filename'),
                       styles['Code']),
-            Paragraph(formatResult(data['headline']), styles['Heading3']),
+            Paragraph(formatResult(getDataStr(data, 'headline')), styles['Heading3']),
             BalancedColumns([img, Paragraph(formatResult(data['abstract']),
                                             styles['Normal'])
                              ]),
             Spacer(0.5 * cm, 0.5 * cm),
             Paragraph(formatResult(data['keywords'])),
-            Paragraph("Model {} on {}, script on {}".format(
-                                        data['model'],
-                                        data['aihost'],
-                                        data['host']
+            Paragraph("Model <strong>{}</strong> (temp: {}) on {}, script runing on {}".format(
+                                        getDataStr(data, 'model'),
+                                        getDataStr(data, 'temp'),
+                                        getDataStr(data, 'aihost'),
+                                        getDataStr(data, 'host')
                                         ), 
                       styles['Italic']),
-            Paragraph(data['when'], styles['Normal']),
+            Paragraph(getDataStr(data, 'when'), styles['Normal']),
             Paragraph("Prompts: ", styles['Heading5']),
         ])
         for k in ['headline', 'abstract', 'keywords']:
