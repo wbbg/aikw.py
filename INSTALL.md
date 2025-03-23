@@ -73,6 +73,10 @@ python3 -m pip install -r requirements.txt
 ```
 5. run ollama docker image:
 ```bash
+docker compose -f docker/docker-compose-nvidia.yml up -d
+```
+or, if no NVIDIA card
+```bash
 docker compose -f docker/docker-compose.yml up -d
 ```
 - to see logs from docker ai run `docker logs -f ollama` in other terminal
