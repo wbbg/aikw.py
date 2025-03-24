@@ -41,7 +41,8 @@ def getArgs():
     global args
     parser = argparse.ArgumentParser(prog="aikw.py",
                                      description="get descriptions and keywords for pictures from a locally running AI")
-    parser.add_argument('filename', nargs='+')
+    parser.add_argument('filename', nargs='+', metavar='FILE|DIR', 
+                        help='files and/or directories to process')
     parser.add_argument('-O', '--ollama', dest='srv', action='append',
                         default=[], metavar=('server:port'),
                         help='IPAddress and port for the AI [127.0.0.1:11434]')
@@ -56,7 +57,7 @@ def getArgs():
                         help='number of keywords to generate [%(default)s]')
     parser.add_argument('-t', '--temperature', type=float, default=0,
                         help='model temperature [%(default)s]')
-    parser.add_argument('-L', '--logfile', default='log',
+    parser.add_argument('-L', '--logfile', default='',
                         help='logfile name [%(default)s]')
     parser.add_argument('-r', '--fileregex', default=r'.*', metavar='REGEX',
                         help='filter file names by regex [%(default)s]')    # r'(?i).*\.orf\.xmp$'
@@ -166,18 +167,27 @@ def fixOrientation(et, img: Image, fname) -> Image:
     return image
 
 
+def getBinaryTag(et, fname, tag):
+    exif =  et.execute_json("-b", '-' + tag, fname)
+    return exif[0][tag]
+
+
 def getImage(et, fname):
     basename, ext = os.path.splitext(fname)
     if ext.upper() == '.XMP':
         fname = basename
         _, ext = os.path.splitext(fname)
-    if ext.upper() in ['.CR2', '.ORF']:
-        imageBase64 = et.execute_json("-b", '-MakerNotes:PreviewImage',
-                                      fname)[0]["MakerNotes:PreviewImage"][7:]
-        img_data = BytesIO(base64.b64decode(imageBase64))
-        image = Image.open(img_data)
-    else:
-        image = Image.open(fname)
+    match ext.upper():
+        case '.ORF':
+            binData = getBinaryTag(et, fname, 'MakerNotes:PreviewImage')
+            img_data = BytesIO(base64.b64decode(binData[7:]))
+            image = Image.open(img_data)
+        case '.RW2':
+            binData = getBinaryTag(et, fname, 'EXIF:JpgFromRaw')
+            img_data = BytesIO(base64.b64decode(binData[7:]))
+            image = Image.open(img_data)
+        case _:
+            image = Image.open(fname)
     return fixOrientation(et, image, fname)
 
 
@@ -240,7 +250,7 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
                         logger.error("Timeout while waiting for LLM")
                         break
                 if llm_thread.is_alive():
-                    logger.error("LLM is not responding, killing thead...")
+                    logger.error("LLM is not responding, killing thread...")
                     signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
                     # os.kill(0, signal.SIGKILL)
                 data[key] = {
@@ -310,7 +320,7 @@ def filterRegex(fname: str) -> bool:
 def workFiles(srv, flist):
     global logger
     data = {}
-    for item in flist:
+    for item in sorted(flist):
         logger.info("Processing %s", item)
         if os.path.isfile(item) and filterRegex(item) and filterMagic(item):
 

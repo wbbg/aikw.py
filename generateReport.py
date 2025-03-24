@@ -55,7 +55,7 @@ def create_document():
     )
     styles = getSampleStyleSheet()
     flowables = []
-    for f in args.filename:
+    for f in sorted(args.filename):
         data = getData(f)
         img = getImage(data)
         flowables.extend([
