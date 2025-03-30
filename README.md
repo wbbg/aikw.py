@@ -25,7 +25,7 @@ $ source .venv/bin/activate
 $ python3 ./aikw.py [...]
 ```
 
-```bash
+```
 usage: aikw.py [-h] [-O server:port] [-M MODEL] [-f] [-o] [-p] [-kw KEYWORDS]
                [-t TEMPERATURE] [-L LOGFILE] [-r REGEX] [-v] [-m MIMETYPE]
                [-n] [-P FILE]

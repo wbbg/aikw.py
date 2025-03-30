@@ -1,7 +1,7 @@
 import base64
 import re
 import os
-import signal
+# import signal
 import sys
 import argparse
 import http.client
@@ -43,13 +43,13 @@ def getArgs():
     global args
     parser = argparse.ArgumentParser(prog="aikw.py",
                                      description="get descriptions and keywords for pictures from a locally running AI")
-    parser.add_argument('filename', nargs='+', metavar='FILE|DIR', 
+    parser.add_argument('filename', nargs='+', metavar='FILE|DIR',
                         help='files and/or directories to process')
     parser.add_argument('-O', '--ollama', dest='srv', action='append',
                         default=[], metavar=('server:port'),
                         help='IPAddress and port for the AI [127.0.0.1:11434]')
     parser.add_argument('-M', '--model', default=OLLAMA_MODEL,
-                        help='ollama model [%(default)s')
+                        help='ollama model [%(default)s]')
     parser.add_argument('-f', '--force', action='store_true',
                         help='force retry on previously handled files [False]')
     parser.add_argument('-o', '--overwrite', action='store_true',
@@ -240,7 +240,7 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         if not args.dryrun:
             llm_context = llm_inst.bind(images=[image_b64])
             for key, prompt in sorted(prompts.items()):
-                response = {}
+                # response = {}
 
                 llm_thread = Process(target=llmInvoke, args=[llm_context, prompt])
                 llm_start = time()
