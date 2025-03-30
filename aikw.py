@@ -12,7 +12,7 @@ from threading import Thread
 from io import BytesIO
 from time import time, sleep
 import logging
-import pylibmagic 
+# import pylibmagic
 import magic
 import datetime
 import socket
@@ -66,7 +66,7 @@ def getArgs():
                         help='filter files by file (partial) mimetype [%(default)s]')
     parser.add_argument('-n', '--dryrun', action='store_true',
                         help='dryrun, don\'t ask the AI [%(default)s]')
-    parser.add_argument('-P', '--prompts', default = "", metavar='FILE',
+    parser.add_argument('-P', '--prompts', default="", metavar='FILE',
                         help='read prompts from JSON- file')
     args = parser.parse_args()
 
@@ -103,7 +103,7 @@ def initApp():
             with open(args.prompts) as pf:
                 prompts = json.load(pf)
             for k in prompts:
-                prompts[k]=prompts[k] % {'KW_NUM': KW_NUM}
+                prompts[k] = prompts[k] % {'KW_NUM': KW_NUM}
         except Exception as e:
             logger.critical('ERROR reading prompts: {}'.format(e))
             sys.exit(2)
@@ -181,7 +181,7 @@ def getImage(et, fname):
     return fixOrientation(et, image, fname)
 
 
-def getAiHost(srv: str)-> str:
+def getAiHost(srv: str) -> str:
     try:
         return socket.gethostbyaddr(srv.split(':')[0])[0]
     except:
@@ -201,8 +201,8 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         'temp': args.temperature,
         'host': hostname,
         'when': datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
-        'aihost': getAiHost(srv),    
-        }
+        'aihost': getAiHost(srv),
+    }
 
     with ExifToolHelper() as et:
         try:
