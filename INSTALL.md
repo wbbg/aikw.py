@@ -87,18 +87,4 @@ docker compose -f docker/docker-compose.yml up -d
 docker exec -it ollama ollama pull llava:v1.6
 ```
 
-## run programm 
-
-- with verbosity 3 against local ai server for .jpg (case insensitive) files in subdir:
-```bash
-python3 ./aikw.py -vvv -r '(?i)\.jpg$' <subdir>:
-```
-- with verbosity 2 against remote ai server at 192.168.1.1:11434 for .ORF.xmp (case sensitive) files in subdir
-```bash
-python3 ./aikw.py -vv -O 192.168.1.1:11434 -r '\.ORF\.xmp$' <subdir>
-```
-- get help
-```bash
-python3 ./aikw.py --help
-```
-
+See [Ollama Library](https://ollama.com/library?sort=popular) for other interesting models. All models with the "vision" tag are usable. Try f.i. **gemma3**.
