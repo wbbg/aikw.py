@@ -8,7 +8,8 @@ import http.client
 from PIL import Image, ImageOps
 from exiftool import ExifToolHelper
 from langchain_ollama import OllamaLLM
-from threading import Thread
+# from threading import Thread
+import multiprocessing as mp
 from io import BytesIO
 from time import time, sleep
 import logging
@@ -25,9 +26,8 @@ KW_NUM = 10
 FORCE_REGEN = False
 ET_PARAMS = []
 logger = logging.getLogger(__name__)
-llm_timeout = 1800.0
-llm_thread = None
-llm_result = None
+# llm_timeout = 1800.0
+llm_timeout = 600.0
 hostname = socket.gethostname()
 
 prompts = {
@@ -130,13 +130,14 @@ def getOllamaSrv(servers: [str]) -> str:
         return srv
 
 
-def llmInvoke(ctx, prompt):
-    global logger, llm_result
+def llmInvoke(ctx, prompt, result):
+    global logger
     logger.debug("Invoking LLM request...")
-    llm_result = None
     try:
-        llm_result = ctx.invoke(prompt)
-        logger.debug(f"Received \"{llm_result}\" from LLM.")
+        response = ctx.invoke(prompt)
+        # response = "TEST"
+        result.put(response)
+        logger.debug("Received \"{%s}\" from LLM." % response)
     except Exception as e:
         logger.warning(f"Communication error with LLM: {e}")
 
@@ -201,7 +202,7 @@ def getAiHost(srv: str) -> str:
 def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
     tagsToRead = ["IPTC:Writer-Editor"]
     global logger, KW_NUM, FORCE_REGEN, ET_PARAMS
-    global llm_timeout, llm_thread, llm_context, llm_prompt, llm_result
+    global llm_timeout, llm_thread, llm_context, llm_prompt
     llm_inst = OllamaLLM(model=args.model, base_url="http://" + srv,
                          temperature=args.temperature)
     data = {
@@ -211,8 +212,9 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         'temp': args.temperature,
         'host': hostname,
         'when': datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
-        'aihost': getAiHost(srv),
-    }
+        'aihost': getAiHost(srv),    
+        }
+    llm_result = mp.Queue()
 
     with ExifToolHelper() as et:
         try:
@@ -240,7 +242,7 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
             for key, prompt in sorted(prompts.items()):
                 # response = {}
 
-                llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
+                llm_thread = mp.Process(target=llmInvoke, args=(llm_context, prompt, llm_result))
                 llm_start = time()
                 llm_thread.start()
                 logger.info(f"Waiting for LLM to finish {key}...")
@@ -251,10 +253,13 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
                         break
                 if llm_thread.is_alive():
                     logger.error("LLM is not responding, killing thread...")
-                    signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
+                    llm_thread.terminate()
+                    llm_result.put("ERROR: LLM did not finish")
                     # os.kill(0, signal.SIGKILL)
+                llm_thread.join()
+                result = llm_result.get()
                 data[key] = {
-                    'result': llm_result.strip(),
+                    'result': result.strip(),
                     'prompt': prompt,
                     'time': time() - llm_start
                 }
