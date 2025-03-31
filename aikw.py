@@ -13,7 +13,7 @@ import multiprocessing as mp
 from io import BytesIO
 from time import time, sleep
 import logging
-# import pylibmagic
+import pylibmagic
 import magic
 import datetime
 import socket
