@@ -59,18 +59,24 @@ options:
   -P, --prompts FILE    read prompts from JSON- file
 ```
 
-defaults in []
-
+- defaults in []
+- currently all data is written to a json file (<input-filename>.<time>.ai.json)
+- '-o', '-f' and '-p' have no function because aikw.py is currently not writing to metadata directly
+- use generateReport.py to generate a PDF- file from *.ai.json files
 
 ## Examples 
 
-- with verbosity 3 against local ai server for .jpg (case insensitive) files in subdir:
+- with verbosity 3 against local ai server for .jpg (case insensitive), files in subdir:
 ```bash
 python3 ./aikw.py -vvv -r '(?i)\.jpg$' <subdir>:
 ```
-- with verbosity 2 against remote ai server at 192.168.1.1:11434 for .ORF.xmp (case sensitive) files in subdir
+- with verbosity 2 against remote ai server at 192.168.1.1:11434 for .ORF.xmp (case sensitive), files in subdir
 ```bash
 python3 ./aikw.py -vv -O 192.168.1.1:11434 -r '\.ORF\.xmp$' <subdir>
+```
+- verbosity 2, remote ai server, mimetyp image/*, model gemma3 (you have to load it into the server, see [INSTALL.md](./INSTALL.md)), read prompts from [file](./prompts-gemma3.json)
+```bash
+python3 ./aikw.py -v 2 -O 192.168.1.1:11434 -m image -kw 10 -m gemma3 -P prompts-gemma3.json -t 0.5 <subdir>
 ```
 - get help
 ```bash

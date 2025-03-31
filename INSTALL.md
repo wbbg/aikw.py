@@ -1,6 +1,8 @@
 ---
 title: Install instructions for aiwt.py 
 ---
+
+# run OLLAMA in docker
 ## docker nvidia support
 
 on some installations it might be nessesary to start docker as `sudo docker ...`
@@ -28,7 +30,6 @@ docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 
 
 should look like:
 
-
 ```text{.tight-code .wide .extra-wide}
 +-----------------------------------------------------------------------------------------+
 | NVIDIA-SMI 570.124.04             Driver Version: 570.124.04     CUDA Version: 12.8     |
@@ -55,13 +56,16 @@ should look like:
 
 see [NVIDIA Installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 
-## install in subdir with virtual environment
+# install Ollama without docker
+see [ollama.com](https://ollama.com/download)
 
-1. unpack/ clone git into **SUBDIR**
-    - tar xzf aiwt.zip
+# install aikw.py in subdir with virtual environment
+
+1. git clone into **SUBDIR**
+    - `git clone https://github.com/wbbg/aikw.py.git`
 2. cd **SUBDIR**
-    - cd aikw
-3. make a virtual environment in .venv/ and activate
+    - `cd aikw.py`
+3. make a virtual environment in .venv/ and activate it
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -87,4 +91,4 @@ docker compose -f docker/docker-compose.yml up -d
 docker exec -it ollama ollama pull llava:v1.6
 ```
 
-See [Ollama Library](https://ollama.com/library?sort=popular) for other interesting models. All models with the "vision" tag are usable. Try f.i. **gemma3**.
+See [Ollama Library](https://ollama.com/library?sort=popular) for other models. All models with the "vision" tag are interesting. Try f.i. **gemma3**.
