@@ -1,5 +1,6 @@
 *.zip
 *.pdf
+.env
 log
 pics/
 *.vim
