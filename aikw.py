@@ -8,8 +8,7 @@ import http.client
 from PIL import Image, ImageOps
 from exiftool import ExifToolHelper
 from langchain_ollama import OllamaLLM
-# from threading import Thread
-from multiprocessing import Process
+from threading import Thread
 from io import BytesIO
 from time import time, sleep
 import logging
@@ -26,8 +25,7 @@ KW_NUM = 10
 FORCE_REGEN = False
 ET_PARAMS = []
 logger = logging.getLogger(__name__)
-# llm_timeout = 1800.0
-llm_timeout = 600.0
+llm_timeout = 1800.0
 llm_thread = None
 llm_result = None
 hostname = socket.gethostname()
@@ -242,7 +240,7 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
             for key, prompt in sorted(prompts.items()):
                 # response = {}
 
-                llm_thread = Process(target=llmInvoke, args=[llm_context, prompt])
+                llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
                 llm_start = time()
                 llm_thread.start()
                 logger.info(f"Waiting for LLM to finish {key}...")
@@ -253,8 +251,7 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
                         break
                 if llm_thread.is_alive():
                     logger.error("LLM is not responding, killing thread...")
-                    llm_thread.terminate()
-                    llm_result = "ERROR: LLM did not finish"
+                    signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
                     # os.kill(0, signal.SIGKILL)
                 data[key] = {
                     'result': llm_result.strip(),
