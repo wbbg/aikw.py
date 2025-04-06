@@ -13,7 +13,7 @@ import multiprocessing as mp
 from io import BytesIO
 from time import time, sleep
 import logging
-import pylibmagic
+# import pylibmagic
 import magic
 import datetime
 import socket
@@ -169,7 +169,7 @@ def fixOrientation(et, img: Image, fname) -> Image:
 
 
 def getBinaryTag(et, fname, tag):
-    exif =  et.execute_json("-b", '-' + tag, fname)
+    exif = et.execute_json("-b", '-' + tag, fname)
     return exif[0][tag]
 
 
@@ -212,8 +212,8 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         'temp': args.temperature,
         'host': hostname,
         'when': datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
-        'aihost': getAiHost(srv),    
-        }
+        'aihost': getAiHost(srv)
+    }
     llm_result = mp.Queue()
 
     with ExifToolHelper() as et:
@@ -242,7 +242,6 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
             for key, prompt in sorted(prompts.items()):
                 # response = {}
 
-                llm_thread = mp.Process(target=llmInvoke, args=(llm_context, prompt, llm_result))
                 llm_start = time()
                 llm_thread.start()
                 logger.info(f"Waiting for LLM to finish {key}...")
