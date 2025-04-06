@@ -26,14 +26,8 @@ KW_NUM = 10
 FORCE_REGEN = False
 ET_PARAMS = []
 logger = logging.getLogger(__name__)
-<<<<<<< HEAD
-llm_timeout = 1800.0
-llm_thread = None
-llm_result = None
-=======
 # llm_timeout = 1800.0
 llm_timeout = 600.0
->>>>>>> a465b3c (fix return of LMM result)
 hostname = socket.gethostname()
 
 prompts = {
@@ -175,7 +169,7 @@ def fixOrientation(et, img: Image, fname) -> Image:
 
 
 def getBinaryTag(et, fname, tag):
-    exif =  et.execute_json("-b", '-' + tag, fname)
+    exif = et.execute_json("-b", '-' + tag, fname)
     return exif[0][tag]
 
 
@@ -218,14 +212,9 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
         'temp': args.temperature,
         'host': hostname,
         'when': datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
-<<<<<<< HEAD
-        'aihost': getAiHost(srv),
+        'aihost': getAiHost(srv)
     }
-=======
-        'aihost': getAiHost(srv),    
-        }
     llm_result = mp.Queue()
->>>>>>> a465b3c (fix return of LMM result)
 
     with ExifToolHelper() as et:
         try:
@@ -253,11 +242,6 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
             for key, prompt in sorted(prompts.items()):
                 # response = {}
 
-<<<<<<< HEAD
-                llm_thread = Thread(target=llmInvoke, args=[llm_context, prompt])
-=======
-                llm_thread = mp.Process(target=llmInvoke, args=(llm_context, prompt, llm_result))
->>>>>>> a465b3c (fix return of LMM result)
                 llm_start = time()
                 llm_thread.start()
                 logger.info(f"Waiting for LLM to finish {key}...")
@@ -268,12 +252,8 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
                         break
                 if llm_thread.is_alive():
                     logger.error("LLM is not responding, killing thread...")
-<<<<<<< HEAD
-                    signal.pthread_kill(llm_thread.ident, signal.SIGKILL)
-=======
                     llm_thread.terminate()
                     llm_result.put("ERROR: LLM did not finish")
->>>>>>> a465b3c (fix return of LMM result)
                     # os.kill(0, signal.SIGKILL)
                 llm_thread.join()
                 result = llm_result.get()
