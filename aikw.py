@@ -13,7 +13,7 @@ import multiprocessing as mp
 from io import BytesIO
 from time import time, sleep
 import logging
-import pylibmagic
+import pylibmagic     # used by magic
 import magic
 import datetime
 import socket
@@ -303,7 +303,6 @@ def writeMetaData(filename, headline, abstract, keywords):
 
 def filterMagic(fname: str) -> bool:
     """test if args.mimetype is contained in fname's mimetype
-
     i.e.: fname's mimetype is image/jpeg, args.mimetype is image --> True
     """
     if args.mimetype:
