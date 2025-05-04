@@ -242,6 +242,7 @@ def genMetaData(srv: str, filename: str, prompts: {}) -> {}:
             for key, prompt in sorted(prompts.items()):
                 # response = {}
 
+                llm_thread = mp.Process(target=llmInvoke, args=(llm_context, prompt, llm_result))
                 llm_start = time()
                 llm_thread.start()
                 logger.info(f"Waiting for LLM to finish {key}...")
