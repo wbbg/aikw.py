@@ -2,7 +2,7 @@ services:
   tailscale-ollama:
     image: tailscale/tailscale:latest
     container_name: ts-ollama
-    hostname: desktop-ollama
+    hostname: ${hostname}
     environment:
       - TS_AUTHKEY=${ts_auth_key}
       #      - TS_EXTRA_ARGS=
