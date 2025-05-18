@@ -340,13 +340,14 @@ def workFiles(srv, flist):
             else:
                 logger.info(f"Using Ollama server {server}")
                 data = genMetaData(server, item, prompts)
-                jsonFName = item + "." + datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '.ai.json'
-                logger.info(f'writing JSON to {jsonFName}')
-                dataWriter.JsonWriter(data, {'filename': jsonFName}).write()
+                if data:
+                    jsonFName = item + "." + datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '.ai.json'
+                    logger.info(f'writing JSON to {jsonFName}')
+                    dataWriter.JsonWriter(data, {'filename': jsonFName}).write()
         elif os.path.isdir(item):
             if os.path.isfile(item + "/.notag"):
                 logger.warning("Skipping %s as requested by .notag file", item)
-                continue    # for item
+                continue    # for item in ...
             workFiles(srv, map(lambda i: os.path.join(os.path.abspath(item), i), os.listdir(item)))
         else:
             logger.info(f"Skipping {item}")
