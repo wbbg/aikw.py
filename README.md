@@ -13,8 +13,7 @@ python3
 a running AI model in [Ollama](https://ollama.com/)
 
 ## Installation
-
-see [INSTALL.md](./INSTALL.md)
+[INSTALL.md](./INSTALL.md)
 
 ## Usage
 

@@ -93,13 +93,42 @@ python3 -m pip install -r requirements.txt
 ```bash
 docker compose -f docker/docker-compose-nvidia.yml up -d
 ```
-**or, without NVIDIA support:**
+**or**, without NVIDIA support:
 ```bash
 docker compose -f docker/docker-compose.yml up -d
 ```
+
+**or**, if you want to add the AI to your [tailnet](https://tailscale.com/):
+
+This is to access the OLLAMA container remotely, f.i. to load a different model 
+with `ollama pull ...` without access to the docker host.
+This way you can ask somebody with a powerful NVIDIA card to run your container and ssh into the container directly.
+
+- create the file docker/.env:
+```docker/.env
+hostname=<the name of the container in your tailnet>
+AUTHORIZED_KEYS_FILE=<path to a file with public keys for ssh>
+```
+then build and start the two containers (ollama attached to tailscale)
+```bash
+docker compose -f docker/nvidia-tailscale.yml up -d
+```
+see the logs of the tailscale container with `docker logs ts-ollama`
+to see the URL you can use to add this container to your *tailnet*. 
+Maybe disable key expiery for <hostname> in [Tailscale Machines](https://login.tailscale.com/admin/machines).
+
+- The ${AUTHORIZED_KEYS_FILE} is copied into the container. If it is not valid, there will be no SSH access, 
+because password is forbidden for root.
+
+- after adding the container to your **tailnet** test with:
+```bash
+ssh root@<hostname> [-i id_file]
+```
+
 - to see logs from docker ai run `docker logs -f ollama` in other terminal
 - to check if docker container is running `docker ps`
 
+<<<<<<< HEAD
 **or, if you want to add the AI to your [tailnet](https://tailscale.com/):**
 
 This is to access the OLLAMA container remotely, f.i. to load a different model 
@@ -136,4 +165,5 @@ See [Ollama Library](https://ollama.com/library?sort=popular) for other models.
 All models with the "vision" tag are interesting. Try f.i. **gemma3**.
 
 If you run OLLAMA on a different machine, make sure you can reach **`http://<remote-machine ip or name>:11434/`**.
+Once the OLLAMA container is up and running continue with [README.md](./README.md)
 
