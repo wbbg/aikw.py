@@ -1,7 +1,6 @@
 .env
 *.zip
 *.pdf
-*.pub
 *.vim
 log
 pics/
