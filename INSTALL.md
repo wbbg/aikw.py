@@ -114,8 +114,8 @@ then build and start the two containers (ollama attached to tailscale)
 docker compose -f docker/nvidia-tailscale.yml up -d
 ```
 see the logs of the tailscale container with `docker logs ts-ollama`
-to see the URL you can use to add this container to your *tailnet*. 
-Maybe disable key expiery for <hostname> in [Tailscale Machines](https://login.tailscale.com/admin/machines).
+to find the URL which you can use to add this container to your *tailnet*. 
+Maybe  you want to disable key expiery for <hostname> in [Tailscale Machines](https://login.tailscale.com/admin/machines).
 
 - The ${AUTHORIZED_KEYS_FILE} is copied into the container. If it is not valid, there will be no SSH access, 
 because password is forbidden for root.
@@ -125,35 +125,8 @@ because password is forbidden for root.
 ssh root@<hostname> [-i id_file]
 ```
 
-- to see logs from docker ai run `docker logs -f ollama` in other terminal
-- to check if docker container is running `docker ps`
-
-**or, if you want to add the AI to your [tailnet](https://tailscale.com/):**
-
-This is to access the OLLAMA container remotely, f.i. to load a different model 
-with `ollama pull ...` without access to the docker host.
-This way you can ask somebody with a powerful NVIDIA card to run your container and ssh into the container directly.
-
-- create the file docker/.env:
-```docker/.env
-hostname=<the name of the container in your tailnet>
-AUTHORIZED_KEYS_FILE=<path to a file with public keys for ssh>
-```
-then build and start the two containers (ollama attached to tailscale)
-```bash
-docker compose -f docker/nvidia-tailscale.yml up -d
-```
-see the logs of the tailscale container with `docker logs ts-ollama`
-to see the URL you can use to add this container to your *tailnet*. 
-Maybe disable key expiery for <hostname> in [Tailscale Machines](https://login.tailscale.com/admin/machines).
-
-- The ${AUTHORIZED_KEYS_FILE} is copied into the container. If it is not valid, there will be no SSH access, 
-because password is forbidden for root.
-
-- after adding the container to your **tailnet** test with:
-```bash
-ssh root@<hostname> [-i id_file]
-```
+- to see logs from OLLAMA docker container run `docker logs -f ollama` in another terminal
+- to check running containers: `docker ps`
 
 6. load ai model *llava:v1.6*
 ```bash
