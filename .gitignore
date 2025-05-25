@@ -1,9 +1,10 @@
+.env
 *.zip
 *.pdf
-.env
+*.pub
+*.vim
 log
 pics/
-*.vim
 .pandoc/
 .venv
 __pycache__
