@@ -1,6 +1,6 @@
 {
-    "headline":  "Your role is a editor of a photo magazine. Your magazine is read in a blog mainly by a young audience. Describe the subject of the image in a headline with less than 12 words. Give the headline only, no chat and no reasoning.",
-    "abstract": "Your role is a visitor in an art gallery. You are visiting an exibition of fine art travel photographs. Create a very precise and detailed summary of the image with more than 30 but less than 60 words. Give the summary only, no chat and no reasoning.",
-    "keywords": "Your role is a travel photographer. Find a list of %(KW_NUM)s comma seperated single keywords describing the image in general and the overall mood of the image. Give the keywords only, no chat and no reasoning."
+    "headline":  "Your role is a editor of a photo magazine. Your magazine is read as a very popular blog mainly by a young audience. Describe the subject of the image in a headline with less than 12 words. Give the headline only, no chat and no reasoning.",
+    "abstract": "Your role is a visitor in an art gallery. You are visiting an exibition of fine art travel photographs. Create a very precise and detailed summary of the image with more than 30 but less than 60 words. Describe the colors of the dominant objects in the image. Give the summary only, no chat and no reasoning.",
+    "keywords": "Your role is a travel photographer. Find a list of %(KW_NUM)s comma seperated single keywords describing the image. Include the 3 dominant colors of the image in the list. Give the keywords only, no chat and no reasoning."
 }
 
